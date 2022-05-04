@@ -11,12 +11,11 @@ import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.eclipse.microprofile.metrics.Metric;
-import org.eclipse.microprofile.metrics.MetricID;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 
 import io.smallrye.metrics.exporters.Exporter;
 import io.smallrye.metrics.exporters.OpenMetricsExporter;
+import io.smallrye.metrics.legacyapi.LegacyMetricRegistryAdapter;
 
 @ApplicationScoped
 public class MetricsRequestHandler {
@@ -104,14 +103,19 @@ public class MetricsRequestHandler {
             }
 
             MetricRegistry registry = MetricRegistries.get(scope);
-            Map<MetricID, Metric> metricValuesMap = registry.getMetrics();
 
-            if (metricValuesMap.keySet().stream().anyMatch(id -> id.getName().equals(metricName))) {
+            // output = exporter.exportMetricsByName(scope, metricName);
+
+            //XXX: Better error handling? exceptions?
+            if (registry instanceof LegacyMetricRegistryAdapter &&
+                    ((LegacyMetricRegistryAdapter) registry).getPrometheusMeterRegistry().find(metricName).meters()
+                            .size() != 0) {
                 output = exporter.exportMetricsByName(scope, metricName);
             } else {
                 responder.respondWith(404, "Metric " + scopePath + " not found", Collections.emptyMap());
                 return;
             }
+
         } else {
             // A single scope
 
@@ -122,12 +126,17 @@ public class MetricsRequestHandler {
             }
 
             MetricRegistry reg = MetricRegistries.get(scope);
-            if (reg.getMetadata().size() == 0) {
+
+            //XXX:  Re-evaluate: other types of "MeterRegistries".. prolly not, this is an OM exporter
+            //Cast to LegacyMetricRegistryAdapter and check that registry contains meters
+            if (reg instanceof LegacyMetricRegistryAdapter &&
+                    ((LegacyMetricRegistryAdapter) reg).getPrometheusMeterRegistry().getMeters().size() != 0) {
+                output = exporter.exportOneScope(scope);
+            } else {
                 responder.respondWith(204, "No data in scope " + scopePath, Collections.emptyMap());
                 return;
             }
 
-            output = exporter.exportOneScope(scope);
         }
 
         Map<String, String> headers = new HashMap<>();

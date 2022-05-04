@@ -12,13 +12,12 @@ import javax.enterprise.inject.spi.BeanManager;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 
-import io.smallrye.metrics.SmallRyeMetricsLogging;
 import io.smallrye.metrics.inject.GlobalRegistryProducer;
 
 public class SmallRyeMetricsCdiExtension implements Extension {
 
     void logVersion(@Observes BeforeBeanDiscovery bbd) {
-        SmallRyeMetricsLogging.log.logSmallRyeMetricsVersion(getImplementationVersion().orElse("unknown"));
+        //        SmallRyeMetricsLogging.log.logSmallRyeMetricsVersion(getImplementationVersion().orElse("unknown"));
     }
 
     // allow to @Inject the global Micrometer registry
@@ -39,7 +38,7 @@ public class SmallRyeMetricsCdiExtension implements Extension {
                         return Optional.ofNullable(properties.getProperty("smallrye.metrics.version"));
                     }
                 } catch (IOException e) {
-                    SmallRyeMetricsLogging.log.unableToDetectVersion();
+                    // SmallRyeMetricsLogging.log.unableToDetectVersion();
                 }
                 return Optional.empty();
             }
