@@ -50,7 +50,6 @@ import io.smallrye.metrics.legacyapi.interceptors.MetricResolver;
 import io.smallrye.metrics.legacyapi.interceptors.MetricsBinding;
 import io.smallrye.metrics.legacyapi.interceptors.TimedInterceptor;
 import io.smallrye.metrics.setup.MetricsMetadata;
-import io.smallrye.metrics.setup.SmallRyeMetricsCdiExtension;
 
 /**
  * CDI extension that provides functionality related to legacy MP Metrics 3.x API usage.
@@ -97,7 +96,7 @@ public class LegacyMetricsExtension implements Extension {
      * Notifies CDI container to check for annotations. This is in place of beans.xml.
      */
     void registerAnnotatedTypes(@Observes BeforeBeanDiscovery bbd, BeanManager manager) {
-        String extensionName = SmallRyeMetricsCdiExtension.class.getName();
+        String extensionName = LegacyMetricsExtension.class.getName();
         for (Class clazz : new Class[] {
                 MetricProducer.class,
                 MetricNameFactory.class,
@@ -174,7 +173,7 @@ public class LegacyMetricsExtension implements Extension {
     void registerMetrics(@Observes AfterDeploymentValidation adv, BeanManager manager) {
 
         // Produce and register custom metrics
-        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+        MetricRegistry registry = MetricRegistries.getOrCreate(MetricRegistry.Type.APPLICATION);
         BeanInfoAdapter<Class<?>> beanInfoAdapter = new CDIBeanInfoAdapter();
         CDIMemberInfoAdapter memberInfoAdapter = new CDIMemberInfoAdapter();
         MetricResolver resolver = new MetricResolver();
@@ -220,7 +219,7 @@ public class LegacyMetricsExtension implements Extension {
     }
 
     void unregisterMetrics(@Observes BeforeShutdown shutdown) {
-        MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+        MetricRegistry registry = MetricRegistries.getOrCreate(MetricRegistry.Type.APPLICATION);
         metricIDs.forEach(metricId -> registry.remove(metricId));
     }
 

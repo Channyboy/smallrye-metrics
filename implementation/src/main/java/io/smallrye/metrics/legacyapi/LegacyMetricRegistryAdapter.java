@@ -32,7 +32,9 @@ import org.eclipse.microprofile.metrics.Tag;
 import org.eclipse.microprofile.metrics.Timer;
 
 import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.Tags;
+import io.smallrye.metrics.MetricRegistries;
 import io.smallrye.metrics.setup.ApplicationNameResolver;
 
 public class LegacyMetricRegistryAdapter implements MetricRegistry {
@@ -40,7 +42,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     private final Type type;
     private final MeterRegistry registry;
 
-    protected static final String MP_APPLICATION_NAME_TAG = "_app";
+    protected static final String MP_APPLICATION_NAME_TAG = "mp_app";
 
     protected static final String MP_APPLICATION_NAME_VAR = "mp.metrics.appName";
 
@@ -75,8 +77,72 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
         return registry;
     }
 
+    /**
+     * Adds the MetricID to an application map.
+     * This map is not a complete list of metrics owned by an application,
+     * produced metrics are managed in the MetricsExtension
+     *
+     * @param name
+     */
+    protected void addNameToApplicationMap(MetricID metricID) {
+        String appName = appNameResolver.getApplicationName();
+        addNameToApplicationMap(metricID, appName);
+    }
+
+    /**
+     * Adds the MetricID to an application map given the application name.
+     * This map is not a complete list of metrics owned by an application,
+     * produced metrics are managed in the MetricsExtension
+     *
+     * @param metricID metric ID of metric that was added
+     * @param appName applicationName
+     */
+    public void addNameToApplicationMap(MetricID metricID, String appName) {
+        // If it is a base metric, the name will be null
+        if (appName == null)
+            return;
+        ConcurrentLinkedQueue<MetricID> list = applicationMap.get(appName);
+        if (list == null) {
+            ConcurrentLinkedQueue<MetricID> newList = new ConcurrentLinkedQueue<MetricID>();
+            list = applicationMap.putIfAbsent(appName, newList);
+            if (list == null)
+                list = newList;
+        }
+        list.add(metricID);
+    }
+
+    public void unRegisterApplicationMetrics() {
+        unRegisterApplicationMetrics(appNameResolver.getApplicationName());
+    }
+
+    public void unRegisterApplicationMetrics(String appName) {
+        /*
+         * This would be the case if the ApplicationListener30's ApplicatinInfo does not contain
+         * the application's deployment name (corrupt application?) or if this MetricRegistry is
+         * not running under the application TCCL ( as it relies on the ComponentMetadata to
+         * retrieve the application name).
+         */
+        if (appName == null) {
+
+            //TODO: SR logging instead
+            //Tr.event(tc, "Application name is null. Cannot unregister metrics for null application.");
+
+            //XXX: dev debug
+            System.out.println("Application name is null. Cannot unregister metrics for null application.");
+            return;
+        }
+
+        ConcurrentLinkedQueue<MetricID> list = applicationMap.remove(appName);
+
+        if (list != null) {
+            for (MetricID metricID : list) {
+                remove(metricID);
+            }
+        }
+    }
+
     public LegacyMetricRegistryAdapter(Type type, MeterRegistry registry, ApplicationNameResolver appNameResolver) {
-        this.appNameResolver = appNameResolver;
+        this.appNameResolver = (appNameResolver == null) ? ApplicationNameResolver.DEFAULT : appNameResolver;
         this.type = type;
         this.registry = registry;
 
@@ -284,6 +350,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     CounterAdapter internalCounter(MpMetadata metadata, MetricDescriptor id) {
         CounterAdapter result = checkCast(CounterAdapter.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new CounterAdapter()));
+        addNameToApplicationMap(id.toMetricID());
         return result.register(metadata, id, registry);
     }
 
@@ -346,6 +413,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     <T> GaugeAdapter<Double> internalGauge(MpMetadata metadata, MetricDescriptor id, T obj, ToDoubleFunction<T> f) {
         GaugeAdapter.DoubleFunctionGauge<T> result = checkCast(GaugeAdapter.DoubleFunctionGauge.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new GaugeAdapter.DoubleFunctionGauge<>(obj, f)));
+        addNameToApplicationMap(id.toMetricID());
         return result.register(metadata, id, registry);
     }
 
@@ -353,6 +421,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     <T, R extends Number> GaugeAdapter<R> internalGauge(MpMetadata metadata, MetricDescriptor id, T obj, Function<T, R> f) {
         GaugeAdapter.FunctionGauge<T, R> result = checkCast(GaugeAdapter.FunctionGauge.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new GaugeAdapter.FunctionGauge<>(obj, f)));
+        addNameToApplicationMap(id.toMetricID());
         return result.register(metadata, id, registry);
     }
 
@@ -441,6 +510,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     HistogramAdapter internalHistogram(MpMetadata metadata, MetricDescriptor id) {
         HistogramAdapter result = checkCast(HistogramAdapter.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new HistogramAdapter()));
+        addNameToApplicationMap(id.toMetricID());
         return result.register(metadata, id, registry);
     }
 
@@ -514,6 +584,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     TimerAdapter internalTimer(MpMetadata metadata, MetricDescriptor id) {
         TimerAdapter result = checkCast(TimerAdapter.class, metadata,
                 constructedMeters.computeIfAbsent(id, k -> new TimerAdapter(registry)));
+        addNameToApplicationMap(id.toMetricID());
         return result.register(metadata, id);
     }
 
@@ -639,8 +710,24 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
 
     boolean internalRemove(MetricDescriptor match) {
         MeterHolder holder = constructedMeters.remove(match);
+
         if (holder != null) {
-            registry.remove(holder.getMeter());
+
+            //XXX: Since we've been registering to the Global Reg, we need to 
+            //remove from global reg... This involves using the Thread Locals again.
+            ThreadLocal<Boolean> tlb = null;
+            if (type.equals(Type.APPLICATION)) {
+                tlb = MetricRegistries.MP_APP_METER_REG_ACCESS;
+            } else if (type.equals(Type.BASE)) {
+                tlb = MetricRegistries.MP_BASE_METER_REG_ACCESS;
+            } else {
+                tlb = MetricRegistries.MP_VENDOR_METER_REG_ACCESS;
+            }
+            tlb.set(true);
+            //io.micrometer.core.instrument.Meter meter = registry.remove(holder.getMeter());
+            io.micrometer.core.instrument.Meter meter = Metrics.globalRegistry.remove(holder.getMeter());
+            tlb.set(false);
+
             // Remove associated metadata if this is the last MP Metric left with that name
             if (constructedMeters.keySet().stream().noneMatch(id -> id.name.equals(match.name))) {
                 metadataMap.remove(match.name);

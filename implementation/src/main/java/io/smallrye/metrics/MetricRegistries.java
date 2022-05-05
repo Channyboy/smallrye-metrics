@@ -21,6 +21,7 @@ import io.micrometer.core.instrument.config.MeterFilter;
 import io.micrometer.prometheus.PrometheusConfig;
 import io.smallrye.metrics.base.LegacyBaseMetrics;
 import io.smallrye.metrics.legacyapi.LegacyMetricRegistryAdapter;
+import io.smallrye.metrics.setup.ApplicationNameResolver;
 import io.smallrye.metrics.setup.MPPrometheusMeterRegistry;
 
 /**
@@ -85,25 +86,31 @@ public class MetricRegistries {
     @RegistryType(type = MetricRegistry.Type.APPLICATION)
     @ApplicationScoped
     public MetricRegistry getApplicationRegistry() {
-        return get(MetricRegistry.Type.APPLICATION);
+        return getOrCreate(MetricRegistry.Type.APPLICATION);
     }
 
     @Produces
     @RegistryType(type = MetricRegistry.Type.BASE)
     @ApplicationScoped
     public MetricRegistry getBaseRegistry() {
-        return get(MetricRegistry.Type.BASE);
+        return getOrCreate(MetricRegistry.Type.BASE);
     }
 
     @Produces
     @RegistryType(type = MetricRegistry.Type.VENDOR)
     @ApplicationScoped
     public MetricRegistry getVendorRegistry() {
-        return get(MetricRegistry.Type.VENDOR);
+        return getOrCreate(MetricRegistry.Type.VENDOR);
     }
 
-    public static MetricRegistry get(MetricRegistry.Type type) {
-        return registries.computeIfAbsent(type, t -> new LegacyMetricRegistryAdapter(type, resolveMeterRegistry(type)));
+    public static MetricRegistry getOrCreate(MetricRegistry.Type type) {
+        return getOrCreate(type, null);
+    }
+    
+    //FIXME: cheap way of passing in the ApplicationNameResolvr from vendor code to the MetricRegistry
+    public static MetricRegistry getOrCreate(MetricRegistry.Type type, ApplicationNameResolver appNameResolver) {
+        return registries.computeIfAbsent(type,
+                t -> new LegacyMetricRegistryAdapter(type, resolveMeterRegistry(type), appNameResolver));
     }
 
     private static MeterRegistry resolveMeterRegistry(MetricRegistry.Type type) {

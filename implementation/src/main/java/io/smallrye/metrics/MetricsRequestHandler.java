@@ -102,7 +102,7 @@ public class MetricsRequestHandler {
                 return;
             }
 
-            MetricRegistry registry = MetricRegistries.get(scope);
+            MetricRegistry registry = MetricRegistries.getOrCreate(scope);
 
             // output = exporter.exportMetricsByName(scope, metricName);
 
@@ -125,7 +125,7 @@ public class MetricsRequestHandler {
                 return;
             }
 
-            MetricRegistry reg = MetricRegistries.get(scope);
+            MetricRegistry reg = MetricRegistries.getOrCreate(scope);
 
             //XXX:  Re-evaluate: other types of "MeterRegistries".. prolly not, this is an OM exporter
             //Cast to LegacyMetricRegistryAdapter and check that registry contains meters

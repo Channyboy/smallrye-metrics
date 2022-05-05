@@ -30,7 +30,7 @@ public class MetricProducer {
 
     // @Inject
     // @RegistryType(type = MetricRegistry.Type.APPLICATION)
-    MetricRegistry applicationRegistry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+    MetricRegistry applicationRegistry = MetricRegistries.getOrCreate(MetricRegistry.Type.APPLICATION);
 
     @Inject
     MetricName metricName;

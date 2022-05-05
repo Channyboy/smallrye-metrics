@@ -40,7 +40,7 @@ import io.smallrye.metrics.MetricRegistries;
  */
 public class ReusabilityByDefaultTest {
 
-    private final MetricRegistry registry = MetricRegistries.get(MetricRegistry.Type.APPLICATION);
+    private final MetricRegistry registry = MetricRegistries.getOrCreate(MetricRegistry.Type.APPLICATION);
 
     @After
     public void removeMetrics() {
