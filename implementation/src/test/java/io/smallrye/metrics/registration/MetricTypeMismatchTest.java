@@ -46,7 +46,7 @@ public class MetricTypeMismatchTest {
 
         registry.histogram(metadata1);
         try {
-            registry.meter(metadata2);
+            registry.timer(metadata2);
             fail("Must not be able to register if a metric with different type is registered under the same name");
         } catch (Exception e) {
             assertThat(e, instanceOf(IllegalStateException.class));
@@ -61,7 +61,7 @@ public class MetricTypeMismatchTest {
                 .withType(MetricType.COUNTER)
                 .build();
         try {
-            registry.meter(metadata1);
+            registry.timer(metadata1);
             fail("Must not be able to register a metric if the type in its metadata is different than the what we specified by using a particular registration method.");
         } catch (Exception e) {
             assertThat(e, instanceOf(IllegalArgumentException.class));

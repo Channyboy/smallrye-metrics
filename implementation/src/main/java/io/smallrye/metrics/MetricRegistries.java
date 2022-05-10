@@ -106,7 +106,7 @@ public class MetricRegistries {
     public static MetricRegistry getOrCreate(MetricRegistry.Type type) {
         return getOrCreate(type, null);
     }
-    
+
     //FIXME: cheap way of passing in the ApplicationNameResolvr from vendor code to the MetricRegistry
     public static MetricRegistry getOrCreate(MetricRegistry.Type type, ApplicationNameResolver appNameResolver) {
         return registries.computeIfAbsent(type,
