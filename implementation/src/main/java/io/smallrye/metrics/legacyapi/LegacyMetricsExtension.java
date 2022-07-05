@@ -17,6 +17,8 @@ import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.eclipse.microprofile.metrics.annotation.Counted;
 import org.eclipse.microprofile.metrics.annotation.Gauge;
 import org.eclipse.microprofile.metrics.annotation.Timed;
+import org.jboss.logging.Logger;
+import org.jboss.logging.Logger.Level;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -42,6 +44,8 @@ import io.smallrye.metrics.setup.MetricsMetadata;
  * CDI extension that provides functionality related to legacy MP Metrics 3.x API usage.
  */
 public class LegacyMetricsExtension implements Extension {
+
+    Logger logger = Logger.getLogger(this.getClass());
 
     private final Map<Bean<?>, List<AnnotatedMember<?>>> metricsFromAnnotatedMethods = new HashMap<>();
 
@@ -97,12 +101,35 @@ public class LegacyMetricsExtension implements Extension {
             bbd.addAnnotatedType(manager.createAnnotatedType(clazz), extensionName + "_" + clazz.getName());
         }
 
+        //        try {
+        //            Class.forName("io.micrometer.elastic.ElasticMeterRegistry", true, Thread.currentThread().getContextClassLoader());
+        //            Class.forName("io.micrometer.elastic.ElasticConfig", true, Thread.currentThread().getContextClassLoader());
+        //        } catch (Exception e) {
+        //            e.printStackTrace();
+        //        }
+
         for (Class clazz : MicrometerBackends.classes()) {
             try {
+                System.out.println("Attempting with  " + clazz.toString());
                 final RequiresClass requiresClass = (RequiresClass) clazz.getAnnotation(RequiresClass.class);
+                System.out.println("requireClass?" + (requiresClass == null));
                 bbd.addAnnotatedType(manager.createAnnotatedType(clazz), extensionName + "_" + clazz.getName());
             } catch (Exception e) {
-                // ignore and don't add
+                StringBuilder sb = new StringBuilder();
+                Arrays.asList(e.getStackTrace()).forEach(st -> sb.append(st.toString() + "\n"));
+                sb.append("cause:\n");
+                Throwable cause = e.getCause();
+                int count = 0;
+                while (cause != null) {
+                    Arrays.asList(cause.getStackTrace()).forEach(st -> sb.append(st.toString() + "\n"));
+
+                    cause = cause.getCause();
+                    sb.append("cause:\n");
+                    count++;
+                }
+
+                logger.log(Level.ERROR, sb.toString());
+                e.printStackTrace();
             }
         }
     }
@@ -173,6 +200,7 @@ public class LegacyMetricsExtension implements Extension {
         final Set<Bean<?>> beans = manager.getBeans(MeterRegistry.class, MicrometerBackends.class.getAnnotation(Backend.class));
         for (Bean<?> bean : beans) {
             final Object reference = manager.getReference(bean, MeterRegistry.class, manager.createCreationalContext(bean));
+            System.out.println("Going to add to MR: " + beans.toString());
             if (MeterRegistry.class.isInstance(reference)) {
                 Metrics.globalRegistry.add(MeterRegistry.class.cast(reference));
             }
