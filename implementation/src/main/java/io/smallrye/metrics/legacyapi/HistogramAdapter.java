@@ -109,7 +109,7 @@ class HistogramAdapter implements Histogram, MeterHolder {
     /** TODO: Separate Issue/PR impl Snapshot adapter */
     @Override
     public Snapshot getSnapshot() {
-        throw new UnsupportedOperationException("This operation is not supported when used with micrometer");
+        return new SnapshotAdapter(summary.takeSnapshot());
     }
 
     @Override
