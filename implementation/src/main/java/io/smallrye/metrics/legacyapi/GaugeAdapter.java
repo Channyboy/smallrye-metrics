@@ -184,11 +184,15 @@ interface GaugeAdapter<T extends Number> extends Gauge<T>, MeterHolder {
          * obtaining the no-oped meter, we need to explicitly query the meter from the prom meter registry
          */
         public R getValue() {
-            io.micrometer.core.instrument.Gauge promGauge = registry.find(descriptor.name()).tags(tagsSet).gauge();
-            if (promGauge != null) {
-                return (R) (Double) promGauge.value();
-            }
-            return (R) (Double) gauge.value();
+            /*
+             * We need to cheat.
+             * Micrometer returns a double.
+             * The generic parameter R is a Number
+             * Or possibly any other boxed Number value.
+             * Can't cast to R...
+             * Since we already have the object and function... just call it...
+             */
+            return (R) f.apply(obj);
         }
 
         @Override
