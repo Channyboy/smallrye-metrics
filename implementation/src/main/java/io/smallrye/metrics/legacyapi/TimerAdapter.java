@@ -18,6 +18,7 @@ import io.smallrye.metrics.SharedMetricRegistries;
 
 class TimerAdapter implements org.eclipse.microprofile.metrics.Timer, MeterHolder {
     Timer timer;
+    
 
     /*
      * Have to hold on to meta data for get* methods. Due to multiple Prometheus
@@ -125,9 +126,13 @@ class TimerAdapter implements org.eclipse.microprofile.metrics.Timer, MeterHolde
     }
 
     @Override
-    /** TODO: Separate Issue/PR impl Snapshot adapter */
     public Snapshot getSnapshot() {
-        throw new UnsupportedOperationException("This operation is not supported when used with micrometer");
+
+        Timer promTimer = registry.find(descriptor.name()).tags(tagsSet).timer();
+        if (promTimer != null) {
+            return new SnapshotAdapter(promTimer.takeSnapshot());
+        }
+        return new SnapshotAdapter(timer.takeSnapshot());
     }
 
     @Override
