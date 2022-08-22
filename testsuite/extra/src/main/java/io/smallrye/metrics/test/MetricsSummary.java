@@ -1,5 +1,5 @@
 /*
- * Copyright 2018 Red Hat, Inc, and individual contributors.
+ * Copyright 2018, 2022 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,21 +19,21 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
 
 import org.eclipse.microprofile.metrics.MetricRegistry;
-import org.eclipse.microprofile.metrics.annotation.RegistryType;
+import org.eclipse.microprofile.metrics.annotation.RegistryScope;
 
 @ApplicationScoped
 public class MetricsSummary {
 
     @Inject
-    @RegistryType(type = MetricRegistry.Type.BASE)
+    @RegistryScope(scope = MetricRegistry.BASE_SCOPE)
     private MetricRegistry baseMetrics;
 
     @Inject
-    @RegistryType(type = MetricRegistry.Type.VENDOR)
+    @RegistryScope(scope = MetricRegistry.VENDOR_SCOPE)
     private MetricRegistry vendorMetrics;
 
     @Inject
-    @RegistryType(type = MetricRegistry.Type.APPLICATION)
+    @RegistryScope(scope = MetricRegistry.APPLICATION_SCOPE)
     private MetricRegistry appMetrics;
 
     @Inject

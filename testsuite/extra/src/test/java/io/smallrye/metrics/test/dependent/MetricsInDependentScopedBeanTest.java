@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc, and individual contributors.
+ * Copyright 2019, 2022 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -33,7 +33,7 @@ import org.junit.AfterClass;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 
-import io.smallrye.metrics.MetricRegistries;
+import io.smallrye.metrics.SharedMetricRegistries;
 
 /**
  * Verify that it is possible to have metrics (except gauges) in beans with other scope than just ApplicationScope.
@@ -53,7 +53,7 @@ public class MetricsInDependentScopedBeanTest {
 
     @AfterClass
     public static void cleanupApplicationMetrics() {
-        MetricRegistries.getOrCreate(MetricRegistry.Type.APPLICATION).removeMatching(MetricFilter.ALL);
+        SharedMetricRegistries.getOrCreate(MetricRegistry.APPLICATION_SCOPE).removeMatching(MetricFilter.ALL);
     }
 
     @Inject
@@ -74,17 +74,6 @@ public class MetricsInDependentScopedBeanTest {
     }
 
     @Test
-    public void meter() {
-        DependentScopedBeanWithMetrics instance1 = beanInstance.get();
-        DependentScopedBeanWithMetrics instance2 = beanInstance.get();
-
-        instance1.meteredMethod();
-        instance2.meteredMethod();
-
-        assertEquals(2, registry.getMeters().get(new MetricID("meter")).getCount());
-    }
-
-    @Test
     public void timer() {
         DependentScopedBeanWithMetrics instance1 = beanInstance.get();
         DependentScopedBeanWithMetrics instance2 = beanInstance.get();
@@ -93,17 +82,6 @@ public class MetricsInDependentScopedBeanTest {
         instance2.timedMethod();
 
         assertEquals(2, registry.getTimers().get(new MetricID("timer")).getCount());
-    }
-
-    @Test
-    public void concurrentGauge() {
-        DependentScopedBeanWithMetrics instance1 = beanInstance.get();
-        DependentScopedBeanWithMetrics instance2 = beanInstance.get();
-
-        instance1.cGaugedMethod();
-        instance2.cGaugedMethod();
-
-        assertEquals(0, registry.getConcurrentGauges().get(new MetricID("cgauge")).getCount());
     }
 
 }

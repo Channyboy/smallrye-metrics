@@ -1,5 +1,5 @@
 /*
- * Copyright 2019 Red Hat, Inc, and individual contributors.
+ * Copyright 2019, 2022 Red Hat, Inc, and individual contributors.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -16,9 +16,7 @@
 
 package io.smallrye.metrics.test.dependent;
 
-import org.eclipse.microprofile.metrics.annotation.ConcurrentGauge;
 import org.eclipse.microprofile.metrics.annotation.Counted;
-import org.eclipse.microprofile.metrics.annotation.Metered;
 import org.eclipse.microprofile.metrics.annotation.Timed;
 
 public class DependentScopedBeanWithMetrics {
@@ -28,18 +26,8 @@ public class DependentScopedBeanWithMetrics {
 
     }
 
-    @Metered(name = "meter", absolute = true)
-    public void meteredMethod() {
-
-    }
-
     @Timed(name = "timer", absolute = true)
     public void timedMethod() {
-
-    }
-
-    @ConcurrentGauge(name = "cgauge", absolute = true)
-    public void cGaugedMethod() {
 
     }
 
