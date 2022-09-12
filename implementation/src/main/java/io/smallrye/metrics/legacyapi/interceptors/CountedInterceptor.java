@@ -63,7 +63,9 @@ public class CountedInterceptor {
                 .map(metricID -> {
                     Counter metric = registry.getCounters().get(metricID);
                     if (metric == null) {
-                        throw SmallRyeMetricsMessages.msg.noMetricFoundInRegistry(MetricType.COUNTER, metricID);
+                        throw new IllegalStateException(
+                                "No metric of type " + MetricType.COUNTER + " and ID " + metricID + " found in registry");
+                        //throw SmallRyeMetricsMessages.msg.noMetricFoundInRegistry(MetricType.COUNTER, metricID);
                     }
                     return metric;
                 })
