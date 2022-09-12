@@ -66,7 +66,9 @@ public class TimedInterceptor {
                 .map(metricID -> {
                     Timer metric = registry.getTimers().get(metricID);
                     if (metric == null) {
-                        throw SmallRyeMetricsMessages.msg.noMetricFoundInRegistry(MetricType.TIMER, metricID);
+                        throw new IllegalStateException(
+                                "No metric of type " + MetricType.COUNTER + " and ID " + metricID + " found in registry");
+                        //throw SmallRyeMetricsMessages.msg.noMetricFoundInRegistry(MetricType.TIMER, metricID);
                     }
                     return metric;
                 })
