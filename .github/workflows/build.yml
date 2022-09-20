@@ -6,6 +6,7 @@ on:
       - main
       - jakarta
       - micrometer
+      - micrometer-test
     paths-ignore:
       - '.gitignore'
       - 'CODEOWNERS'
