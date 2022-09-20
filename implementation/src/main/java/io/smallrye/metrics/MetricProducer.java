@@ -100,11 +100,28 @@ public class MetricProducer {
         Tag[] tags = getTags(ip);
 
         Counter counter = registry.counter(metadata, tags);
-        // if (applicationRegistry instanceof LegacyMetricRegistryAdapter) {
-        // MetricID metricID = new MetricID(metadata.getName(), appendScopeTags(tags,
-        // (LegacyMetricRegistryAdapter) applicationRegistry));
-        // metricExtension.addMetricId(metricID);
-        // }
+        
+
+        if (registry instanceof LegacyMetricRegistryAdapter) {
+
+            //FIXME: Temporary, resolve the mp.metrics.appName tag if if available to MetricID
+            // MetricID will be added to metricID list in extension class.
+            // Used during shutdown of CDI extension
+            Tags mmTags = ((LegacyMetricRegistryAdapter) registry).withAppTags(tags);
+
+            List<Tag> mpListTags = new ArrayList<Tag>();
+            mmTags.forEach(tag -> {
+                Tag mpTag = new Tag(tag.getKey(), tag.getValue());
+                mpListTags.add(mpTag);
+            });
+
+            Tag[] mpTagArray = mpListTags.toArray(new Tag[0]);
+
+            //add this CDI MetricID into MetricRegistry's MetricID list....
+            MetricID metricID = new MetricID(metadata.getName(), mpTagArray);
+            metricExtension.addMetricId(metricID);
+
+        }         
 
         return counter;
     }
@@ -118,11 +135,27 @@ public class MetricProducer {
         Tag[] tags = getTags(ip);
 
         Timer timer = registry.timer(metadata, tags);
-        // if (applicationRegistry instanceof LegacyMetricRegistryAdapter) {
-        // MetricID metricID = new MetricID(metadata.getName(), appendScopeTags(tags,
-        // (LegacyMetricRegistryAdapter) applicationRegistry));
-        // metricExtension.addMetricId(metricID);
-        // }
+        
+        if (registry instanceof LegacyMetricRegistryAdapter) {
+
+            //FIXME: Temporary, resolve the mp.metrics.appName tag if if available to MetricID
+            // MetricID will be added to metricID list in extension class.
+            // Used during shutdown of CDI extension
+            Tags mmTags = ((LegacyMetricRegistryAdapter) registry).withAppTags(tags);
+
+            List<Tag> mpListTags = new ArrayList<Tag>();
+            mmTags.forEach(tag -> {
+                Tag mpTag = new Tag(tag.getKey(), tag.getValue());
+                mpListTags.add(mpTag);
+            });
+
+            Tag[] mpTagArray = mpListTags.toArray(new Tag[0]);
+
+            //add this CDI MetricID into MetricRegistry's MetricID list....
+            MetricID metricID = new MetricID(metadata.getName(), mpTagArray);
+            metricExtension.addMetricId(metricID);
+
+        }   
         return timer;
     }
 
