@@ -1,5 +1,7 @@
 package io.smallrye.metrics.legacyapi;
 
+import java.security.AccessController;
+import java.security.PrivilegedAction;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,6 +36,8 @@ import io.smallrye.metrics.SharedMetricRegistries;
 import io.smallrye.metrics.setup.ApplicationNameResolver;
 
 public class LegacyMetricRegistryAdapter implements MetricRegistry {
+
+    private final static boolean usingJava2Security = System.getSecurityManager() != null;
 
     private final String scope;
     private final MeterRegistry registry;
@@ -237,7 +241,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     private synchronized io.micrometer.core.instrument.Tag resolveMPConfigAppNameTagByApplication(String appName) {
         //Return cached value
         if (!applicationMPConfigAppNameTagCache.containsKey(appName)) {
-            ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
+            ClassLoader classLoader = getThreadContextClassLoader();
 
             //Using MP Config to retreive the mp.metrics.appName Config value
             Optional<String> applicationName = ConfigProvider.getConfig(classLoader).getOptionalValue(MP_APPLICATION_NAME_VAR,
@@ -907,6 +911,15 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
 
     public MemberToMetricMappings getMemberToMetricMappings() {
         return memberToMetricMappings;
+    }
+
+    private ClassLoader getThreadContextClassLoader() {
+        if (usingJava2Security) {
+            return AccessController.doPrivileged((PrivilegedAction<ClassLoader>) () -> {
+                return Thread.currentThread().getContextClassLoader();
+            });
+        }
+        return Thread.currentThread().getContextClassLoader();
     }
 
 }
