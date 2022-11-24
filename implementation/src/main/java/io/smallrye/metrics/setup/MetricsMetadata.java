@@ -4,6 +4,8 @@ import static io.smallrye.metrics.legacyapi.TagsUtils.parseTagsAsArray;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricID;
@@ -23,11 +25,17 @@ import io.smallrye.metrics.legacyapi.interceptors.MetricResolver;
 
 public class MetricsMetadata {
 
+    private static final String CLASS_NAME = MetricsMetadata.class.getName();
+    private static final Logger LOGGER = Logger.getLogger(CLASS_NAME);
+
     private MetricsMetadata() {
     }
 
     public static List<MetricID> registerMetrics(MetricRegistry registry, MetricResolver resolver, BeanInfo bean,
             MemberInfo element) {
+
+        final String METHOD_NAME = "registerMetrics";
+
         MetricResolver.Of<Counted> counted = resolver.counted(bean, element);
         List<MetricID> metricIDs = new ArrayList<>();
 
@@ -69,7 +77,7 @@ public class MetricsMetadata {
             ((LegacyMetricRegistryAdapter) registry).getMemberToMetricMappings().addTimer(element, metricID);
 
         }
-
+        LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "The following MetricIDs were registered: {0} ", metricIDs);
         return metricIDs;
     }
 

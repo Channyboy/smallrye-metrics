@@ -6,6 +6,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.metrics.MetricRegistry;
@@ -41,6 +43,9 @@ import io.smallrye.metrics.setup.ApplicationNameResolver;
  */
 public class SharedMetricRegistries {
 
+    private static final String CLASS_NAME = SharedMetricRegistries.class.getName();
+    private static final Logger LOGGER = Logger.getLogger(CLASS_NAME);
+
     protected static final String GLOBAL_TAG_MALFORMED_EXCEPTION = "Malformed list of Global Tags. Tag names "
             + "must match the following regex [a-zA-Z_][a-zA-Z0-9_]*." + " Global Tag values must not be empty."
             + " Global Tag values MUST escape equal signs `=` and commas `,`" + " with a backslash `\\` ";
@@ -59,6 +64,8 @@ public class SharedMetricRegistries {
      * Global Meter Registry
      */
     static {
+        final String METHOD_NAME = "staticInit";
+
         Set<Class<?>> setOfMeterRegistryClasses = new HashSet<Class<?>>();
 
         /*
@@ -72,7 +79,10 @@ public class SharedMetricRegistries {
                 setOfMeterRegistryClasses.add(clazz);
             } catch (Exception e) {
                 // Do nothing
-                // No need to log, fail silently
+                //Did not use WARNING as it will flood console
+                LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME, "Required classes for {0} not found on classpath",
+                        clazz.getName());
+
             }
         }
 
@@ -93,15 +103,20 @@ public class SharedMetricRegistries {
                      */
                     if (backendMeterRegistry != null) {
                         Metrics.globalRegistry.add(backendMeterRegistry);
+                        LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME,
+                                "MeterRegistry of type {0} created and registered to global composite MeterRegistry",
+                                clazz.getName());
+
                     }
 
                 } catch (IllegalAccessException | InstantiationException e) {
                     // This shouldn't happen...
-                    // TODO: but we should log about it if it ever does happen..
+                    LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "Encountered exception: {0}", e);
                 }
             } else {
                 // This shouldn't happen.
-                // TODO: but we should log about it if it ever does happen..
+                LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "The class {0} is not compatible with {1} ",
+                        new String[] { clazz.getName(), MicrometerBackends.class.getName() });
             }
         }
 
@@ -114,7 +129,8 @@ public class SharedMetricRegistries {
 
     // FIXME: cheap way of passing in the ApplicationNameResolvr from vendor code to the MetricRegistry
     public static MetricRegistry getOrCreate(String scope, ApplicationNameResolver appNameResolver) {
-
+        final String METHOD_NAME = "getOrCreate";
+        LOGGER.logp(Level.FINER, CLASS_NAME, METHOD_NAME, "Requested MetricRegistry of scope {0}", scope);
         MetricRegistry metricRegistry = registries.computeIfAbsent(scope,
                 t -> new LegacyMetricRegistryAdapter(scope, meterRegistry, appNameResolver));
 
@@ -124,12 +140,15 @@ public class SharedMetricRegistries {
         if (!isBaseMetricsRegistered && scope.equals(MetricRegistry.BASE_SCOPE)) {
             new LegacyBaseMetrics().register(metricRegistry);
             isBaseMetricsRegistered = true;
+            LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME, "Base metrics registered");
         }
 
+        LOGGER.logp(Level.FINER, CLASS_NAME, METHOD_NAME, "Returning MetricRegistry of scope {0}", scope);
         return metricRegistry;
     }
 
     private static MeterRegistry resolveMeterRegistry() {
+        final String METHOD_NAME = "resolveMeterRegistry";
 
         MeterRegistry meterRegistry;
 
@@ -142,9 +161,11 @@ public class SharedMetricRegistries {
          */
         if (!Boolean.parseBoolean(ConfigProvider.getConfig()
                 .getOptionalValue("mp.metrics.prometheus.enabled", String.class).orElse("true"))) {
+            LOGGER.logp(Level.CONFIG, CLASS_NAME, METHOD_NAME,
+                    "The MP Config value for mp.metrics.prometheus.enabled is false");
             meterRegistry = new SimpleMeterRegistry();
         } else {
-
+            LOGGER.logp(Level.CONFIG, CLASS_NAME, METHOD_NAME, "The MP Config value for mp.metrics.prometheus.enabled is true");
             /*
              * The below Try block is equivalent to calling. meterRegistry = new
              * PrometheusMeterRegistry(customConfig); This is to address problems for runtimes that may need to
@@ -169,15 +190,16 @@ public class SharedMetricRegistries {
                 Object prometheusMeterRegistryInstance = constructor.newInstance(new MPPrometheusConfig());
 
                 meterRegistry = (MeterRegistry) prometheusMeterRegistryInstance;
-
+                LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME, "Prometheus MeterRegistry created");
             } catch (ClassNotFoundException | SecurityException | IllegalArgumentException | IllegalAccessException
                     | NoSuchMethodException | InstantiationException | InvocationTargetException e) {
-                // TODO: We really don't care about exception being thrown, but should log about it anyways
-                // (finest?)
+                LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "Encountered exception: {0}", e);
                 /*
                  * Default to simple meter registry otherwise. No Need to create a "MPSimpleMeterRegisty with scope
                  * field as scope was only used for the PrometheusExporter
                  */
+                LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME,
+                        "Encountered exception while loading Prometheus MeterRegistry, defaulting to Simple MeterRegistry");
                 meterRegistry = new SimpleMeterRegistry();
             }
         }

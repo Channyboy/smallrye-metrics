@@ -4,6 +4,8 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.SortedMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.inject.Produces;
@@ -30,6 +32,9 @@ import io.smallrye.metrics.legacyapi.interceptors.SeMetricName;
 
 @ApplicationScoped
 public class MetricProducer {
+
+    private static final String CLASS_NAME = MetricProducer.class.getName();
+    private static final Logger LOGGER = Logger.getLogger(CLASS_NAME);
 
     MetricRegistry registry;
 
@@ -58,6 +63,9 @@ public class MetricProducer {
 
     @Produces
     public <T extends Number> Gauge<T> getGauge(InjectionPoint ip) {
+
+        final String METHOD_NAME = "getGauge";
+
         // A forwarding Gauge must be returned as the Gauge creation happens when the
         // declaring bean gets instantiated and the corresponding Gauge can be injected
         // before which leads to producing a null value
@@ -72,14 +80,18 @@ public class MetricProducer {
 
             Tag[] mpTagArray = resolveAppNameTag(tags);
 
-            MetricID gaugeId = new MetricID(name, mpTagArray);
+            MetricID metricID = new MetricID(name, mpTagArray);
 
-            return ((Gauge<T>) gauges.get(gaugeId)).getValue();
+            LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced Gauge with MetricID {0}", metricID);
+
+            return ((Gauge<T>) gauges.get(metricID)).getValue();
         };
     }
 
     @Produces
     public Counter getCounter(InjectionPoint ip) {
+
+        final String METHOD_NAME = "getCounter";
 
         registry = SharedMetricRegistries.getOrCreate(getScope(ip));
         Metadata metadata = getMetadata(ip);
@@ -91,11 +103,15 @@ public class MetricProducer {
         MetricID metricID = new MetricID(metadata.getName(), mpTagArray);
         metricExtension.addMetricId(metricID);
 
+        LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced Counter with MetricID {0}", metricID);
+
         return counter;
     }
 
     @Produces
     public Timer getTimer(InjectionPoint ip) {
+
+        final String METHOD_NAME = "getTimer";
 
         registry = SharedMetricRegistries.getOrCreate(getScope(ip));
 
@@ -108,11 +124,15 @@ public class MetricProducer {
         MetricID metricID = new MetricID(metadata.getName(), mpTagArray);
         metricExtension.addMetricId(metricID);
 
+        LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced Timer with MetricID {0}", metricID);
+
         return timer;
     }
 
     @Produces
     public Histogram getHistogram(InjectionPoint ip) {
+
+        final String METHOD_NAME = "getHistogram";
 
         registry = SharedMetricRegistries.getOrCreate(getScope(ip));
         Metadata metadata = getMetadata(ip);
