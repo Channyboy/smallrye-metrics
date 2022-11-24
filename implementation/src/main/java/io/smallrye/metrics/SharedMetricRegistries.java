@@ -64,7 +64,6 @@ public class SharedMetricRegistries {
      * Global Meter Registry
      */
     static {
-        final String METHOD_NAME = "staticInit";
 
         Set<Class<?>> setOfMeterRegistryClasses = new HashSet<Class<?>>();
 
@@ -80,7 +79,7 @@ public class SharedMetricRegistries {
             } catch (Exception e) {
                 // Do nothing
                 //Did not use WARNING as it will flood console
-                LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME, "Required classes for {0} not found on classpath",
+                LOGGER.logp(Level.FINE, CLASS_NAME, null, "Required classes for {0} not found on classpath",
                         clazz.getName());
 
             }
@@ -103,7 +102,7 @@ public class SharedMetricRegistries {
                      */
                     if (backendMeterRegistry != null) {
                         Metrics.globalRegistry.add(backendMeterRegistry);
-                        LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME,
+                        LOGGER.logp(Level.FINE, CLASS_NAME, null,
                                 "MeterRegistry of type {0} created and registered to global composite MeterRegistry",
                                 clazz.getName());
 
@@ -111,11 +110,11 @@ public class SharedMetricRegistries {
 
                 } catch (IllegalAccessException | InstantiationException e) {
                     // This shouldn't happen...
-                    LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "Encountered exception: {0}", e);
+                    LOGGER.logp(Level.SEVERE, CLASS_NAME, null, "Encountered exception: {0}", e);
                 }
             } else {
                 // This shouldn't happen.
-                LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "The class {0} is not compatible with {1} ",
+                LOGGER.logp(Level.SEVERE, CLASS_NAME, null, "The class {0} is not compatible with {1} ",
                         new String[] { clazz.getName(), MicrometerBackends.class.getName() });
             }
         }

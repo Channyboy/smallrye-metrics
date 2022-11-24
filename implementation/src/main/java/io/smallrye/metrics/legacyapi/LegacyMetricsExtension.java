@@ -40,8 +40,6 @@ import io.smallrye.metrics.MetricProducer;
 import io.smallrye.metrics.MetricRegistryProducer;
 import io.smallrye.metrics.MetricsRequestHandler;
 import io.smallrye.metrics.SharedMetricRegistries;
-import io.smallrye.metrics.SmallRyeMetricsLogging;
-import io.smallrye.metrics.SmallRyeMetricsMessages;
 import io.smallrye.metrics.elementdesc.adapter.BeanInfoAdapter;
 import io.smallrye.metrics.elementdesc.adapter.cdi.CDIBeanInfoAdapter;
 import io.smallrye.metrics.elementdesc.adapter.cdi.CDIMemberInfoAdapter;
