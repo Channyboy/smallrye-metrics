@@ -14,6 +14,8 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.function.ToDoubleFunction;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.metrics.Counter;
@@ -33,6 +35,9 @@ import io.micrometer.core.instrument.Tags;
 import io.smallrye.metrics.setup.ApplicationNameResolver;
 
 public class LegacyMetricRegistryAdapter implements MetricRegistry {
+    
+    private static final String CLASS_NAME = LegacyMetricRegistryAdapter.class.getName();
+    private static final Logger LOGGER = Logger.getLogger(CLASS_NAME);
 
     private final String scope;
     private final MeterRegistry registry;
@@ -93,6 +98,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
      * @param appName applicationName
      */
     public void addNameToApplicationMap(MetricID metricID, String appName) {
+        final String METHOD_NAME = "addNameToApplicationMap";
         // If it is a base metric, the name will be null
         if (appName == null)
             return;
@@ -104,6 +110,7 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
                 list = newList;
         }
         list.add(metricID);
+        LOGGER.logp(Level.FINER, CLASS_NAME, METHOD_NAME, String.format("Mapped MetricID %s to application \"%s\"", metricID, appName));
     }
 
     public void unRegisterApplicationMetrics() {
@@ -163,12 +170,18 @@ public class LegacyMetricRegistryAdapter implements MetricRegistry {
     }
 
     private synchronized io.micrometer.core.instrument.Tag[] resolveMPConfigGlobalTagsByServer() {
+        
+        final String METHOD_NAME = "resolveMPConfigGlobalTagsByServer";
         if (SERVER_LEVEL_MPCONFIG_GLOBAL_TAGS == null) {
 
             // Using MP Config to retreive the mp.metrics.tags Config value
             Optional<String> globalTags = ConfigProvider.getConfig().getOptionalValue(GLOBAL_TAGS_VARIABLE,
                     String.class);
 
+            if (globalTags.isPresent()) {
+                LOGGER.logp(Level.FINE, CLASS_NAME, METHOD_NAME, String.format("MicroProfile Config value for \"%s\" resolved to be: %s", GLOBAL_TAGS_VARIABLE, globalTags.get()));
+            }
+            
             // evaluate if there exists tag values or set tag[0] to be null for no value;
             SERVER_LEVEL_MPCONFIG_GLOBAL_TAGS = (globalTags.isPresent()) ? parseGlobalTags(globalTags.get())
                     : new io.micrometer.core.instrument.Tag[0];

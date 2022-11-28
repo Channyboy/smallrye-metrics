@@ -50,12 +50,9 @@ public class MetricsMetadata {
 
             Tag[] mpTagArray = resolveAppNameTag(registry, tags);
 
-            // add this CDI MetricID into MetricRegistry's MetricID list....
             MetricID metricID = new MetricID(metadata.getName(), mpTagArray);
             metricIDs.add(metricID);
 
-            // Some list in MetricRegistry that maps the CDI element, metricID and metric
-            // type
             ((LegacyMetricRegistryAdapter) registry).getMemberToMetricMappings().addCounter(element, metricID);
 
         }

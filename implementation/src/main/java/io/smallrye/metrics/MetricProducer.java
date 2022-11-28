@@ -82,9 +82,16 @@ public class MetricProducer {
 
             MetricID metricID = new MetricID(name, mpTagArray);
 
-            LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced Gauge with MetricID {0}", metricID);
+            Gauge<T> gauge = gauges.get(metricID);
 
-            return ((Gauge<T>) gauges.get(metricID)).getValue();
+            if (gauge == null) {
+                LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME, "Could not retrieve gauge with MetricID {0}", metricID);
+                return null;
+            } else {
+                LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced Gauge with MetricID {0}", metricID);
+                return gauge.getValue();
+            }
+
         };
     }
 
@@ -140,6 +147,8 @@ public class MetricProducer {
 
         Histogram histogram = registry.histogram(metadata, tags);
 
+        LOGGER.logp(Level.FINEST, CLASS_NAME, METHOD_NAME, "Produced histogram with MetricID {0}", "");
+
         return histogram;
     }
 
@@ -178,10 +187,9 @@ public class MetricProducer {
     }
 
     /*
-     * TODO: Temporary, resolve the mp.metrics.appName tag if if available to
-     * append to MembersToMetricMapping so that interceptors can find the annotated
-     * metric Possibly remove MembersToMetricMapping in future, and directly query
-     * metric/meter-registry.
+     * Combine tags with mp.metrics.appName tag if if available to
+     * provide accurate MetricIDs to the MetricID set held in the
+     * CDI extension
      */
     private Tag[] resolveAppNameTag(Tag... tags) {
         Tags mmTags = ((LegacyMetricRegistryAdapter) registry).withAppTags(tags);

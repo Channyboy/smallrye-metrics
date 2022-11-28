@@ -86,6 +86,10 @@ public class MetricsRequestHandler {
         }
 
         if (!requestPath.startsWith(contextRoot)) {
+            LOGGER.logp(Level.SEVERE, CLASS_NAME, METHOD_NAME,
+                    "The expected context root of metrics is \"{0}\", but a request with a different " +
+                            "path was routed to MetricsRequestHandler",
+                    contextRoot);
             responder.respondWith(500,
                     "The expected context root of metrics is " + contextRoot
                             + ", but a request with a different path was routed to MetricsRequestHandler",

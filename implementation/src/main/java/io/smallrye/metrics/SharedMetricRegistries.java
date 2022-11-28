@@ -77,7 +77,6 @@ public class SharedMetricRegistries {
                 final Class<?>[] requiredClass = requiresClass.value();
                 setOfMeterRegistryClasses.add(clazz);
             } catch (Exception e) {
-                // Do nothing
                 //Did not use WARNING as it will flood console
                 LOGGER.logp(Level.FINE, CLASS_NAME, null, "Required classes for {0} not found on classpath",
                         clazz.getName());
