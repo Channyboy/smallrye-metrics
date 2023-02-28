@@ -51,6 +51,9 @@ public class SharedMetricRegistries {
     private static boolean isBaseMetricsRegistered = false;
 
     private static MeterRegistry meterRegistry;
+
+    private static ApplicationNameResolver vendorAppNameResolver;
+
     /*
      * Go through class path to identify what registries are available and register them to Micrometer
      * Global Meter Registry
@@ -124,16 +127,32 @@ public class SharedMetricRegistries {
         meterRegistry = resolveMeterRegistry();
     }
 
-    public static MetricRegistry getOrCreate(String scope) {
-        return getOrCreate(scope, null);
+    /*
+     * For vendor to provide an "default" AppNameResolver
+     */
+    public static void setVendorAppNameResolver(ApplicationNameResolver appNameResolver) {
+        vendorAppNameResolver = appNameResolver;
     }
 
-    // FIXME: cheap way of passing in the ApplicationNameResolvr from vendor code to the MetricRegistry
+    public static Set<String> getRegistriesMapKeySet() {
+        //return copy of registries' map key set of scope names
+        return new HashSet<String>(registries.keySet());
+    }
+
+    public static MetricRegistry getOrCreate(String scope) {
+        /*
+         * Check if vendor has provided an AppNameResolver to use.
+         */
+        ApplicationNameResolver appNameResolver = (vendorAppNameResolver != null) ? vendorAppNameResolver : null;
+        return getOrCreate(scope, appNameResolver);
+    }
+
     public static MetricRegistry getOrCreate(String scope, ApplicationNameResolver appNameResolver) {
         final String METHOD_NAME = "getOrCreate";
         if (LOGGER.isLoggable(Level.FINER)) {
             LOGGER.logp(Level.FINER, CLASS_NAME, METHOD_NAME, "Requested MetricRegistry of scope {0}", scope);
         }
+
         MetricRegistry metricRegistry = registries.computeIfAbsent(scope,
                 t -> new LegacyMetricRegistryAdapter(scope, meterRegistry, appNameResolver));
 
