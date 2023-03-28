@@ -59,7 +59,7 @@ public class PrometheusMetricsExporter implements Exporter {
         for (MeterRegistry meterRegistry : prometheusRegistryList) {
             PrometheusMeterRegistry promMeterRegistry = (PrometheusMeterRegistry) meterRegistry;
             // strip "# EOF"
-            String scraped = promMeterRegistry.scrape(TextFormat.CONTENT_TYPE_004).replaceFirst("# EOF\r?\n?", "");
+            String scraped = promMeterRegistry.scrape(TextFormat.CONTENT_TYPE_OPENMETRICS_100).replaceFirst("# EOF\r?\n?", "");
             sb.append(scraped);
         }
         return sb.toString();
