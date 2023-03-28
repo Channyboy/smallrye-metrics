@@ -12,6 +12,7 @@ import java.util.logging.Logger;
 import org.eclipse.microprofile.config.ConfigProvider;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 
+import io.micrometer.core.instrument.Clock;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
 import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
@@ -20,6 +21,7 @@ import io.smallrye.metrics.legacyapi.LegacyMetricRegistryAdapter;
 import io.smallrye.metrics.micrometer.MicrometerBackends;
 import io.smallrye.metrics.micrometer.RequiresClass;
 import io.smallrye.metrics.setup.ApplicationNameResolver;
+import io.smallrye.metrics.setup.SpanContextCallback;
 
 /**
  * SharedMetricRegistries is used to create/retrieve a MicroProfile Metric's MetricRegistry instance
@@ -46,13 +48,19 @@ public class SharedMetricRegistries {
 
     private static final String FQ_PROMETHEUS_CONFIG_PATH = "io.micrometer.prometheus.PrometheusConfig";
     private static final String FQ_PROMETHEUS_METRIC_REGISTRY_PATH = "io.micrometer.prometheus.PrometheusMeterRegistry";
-
+    ////////
+    private static final String FQ_PROMETHEUS_COLLECTOR_REGISTRY_PATH = "io.prometheus.client.CollectorRegistry";
+    private static final String FQ_PROMETHEUS_EXEMPLAR_SEMPLAR_PATH = "io.prometheus.client.exemplars.ExemplarSampler";
+    private static final String FQ_PROMETHEUS_DEFAULT_EXEMPLAR_SEMPLAR_PATH = "io.prometheus.client.exemplars.DefaultExemplarSampler";
+    private static final String FQ_PROMETHEUS_SPANT_CONTEXT_SUPPLIER_PATH = "io.prometheus.client.exemplars.tracer.common.SpanContextSupplier";
     private static final Map<String, MetricRegistry> registries = new ConcurrentHashMap<>();
     private static boolean isBaseMetricsRegistered = false;
 
     private static MeterRegistry meterRegistry;
 
     private static ApplicationNameResolver vendorAppNameResolver;
+
+    private static MPSpanContextSupplier mpscs = new MPSpanContextSupplier();
 
     /*
      * Go through class path to identify what registries are available and register them to Micrometer
@@ -220,9 +228,41 @@ public class SharedMetricRegistries {
                  */
                 Class<?> prometheusMetricRegistryClass = Class.forName(FQ_PROMETHEUS_METRIC_REGISTRY_PATH);
 
-                Constructor<?> constructor = prometheusMetricRegistryClass.getConstructor(prometheusConfigClass);
+                Class<?> collectorRegistryClass = Class.forName(FQ_PROMETHEUS_COLLECTOR_REGISTRY_PATH);
+                Class<?> exemplarSamplerClass = null;
+                Class<?> defaultExemplarSamplerClass = null;
+                Class<?> spanContextSupplierClass;
 
-                Object prometheusMeterRegistryInstance = constructor.newInstance(new MPPrometheusConfig());
+                Constructor<?> collectorRegistryConstructor = collectorRegistryClass.getConstructor();
+                Object defaultExemplarSamplerInstance = null;
+                try {
+
+                    // classes
+
+                    exemplarSamplerClass = Class.forName(FQ_PROMETHEUS_EXEMPLAR_SEMPLAR_PATH);
+                    defaultExemplarSamplerClass = Class.forName(FQ_PROMETHEUS_DEFAULT_EXEMPLAR_SEMPLAR_PATH);
+                    spanContextSupplierClass = Class.forName(FQ_PROMETHEUS_SPANT_CONTEXT_SUPPLIER_PATH);
+
+                    // instances
+                    Constructor<?> desConstructor = defaultExemplarSamplerClass
+                            .getConstructor(spanContextSupplierClass);
+
+                    defaultExemplarSamplerInstance = desConstructor.newInstance(mpscs);
+
+                } catch (ClassNotFoundException e1) {
+                    //wanted specific exceptions thrown for the prom deps?
+                    //kill if not found, use simple?
+                    e1.printStackTrace();
+                }
+                //null checks... or rely on the above catch (not so good)
+                Constructor<?> constructor = prometheusMetricRegistryClass.getConstructor(prometheusConfigClass);
+                constructor = prometheusMetricRegistryClass.getConstructor(prometheusConfigClass, collectorRegistryClass,
+                        Clock.class, exemplarSamplerClass);
+
+                //Object prometheusMeterRegistryInstance = constructor.newInstance(new MPPrometheusConfig());
+
+                Object prometheusMeterRegistryInstance = constructor.newInstance(new MPPrometheusConfig(),
+                        collectorRegistryConstructor.newInstance(), Clock.SYSTEM, defaultExemplarSamplerInstance);
 
                 meterRegistry = (MeterRegistry) prometheusMeterRegistryInstance;
                 if (LOGGER.isLoggable(Level.FINE)) {
@@ -248,6 +288,10 @@ public class SharedMetricRegistries {
         Metrics.addRegistry(meterRegistry);
 
         return meterRegistry;
+    }
+
+    public static void setSpanContextCallback(SpanContextCallback spanContextCallback) {
+        mpscs.setSpanContextCallback(spanContextCallback);
     }
 
     /**
