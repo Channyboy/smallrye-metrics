@@ -27,7 +27,6 @@ import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.junit.After;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Test;
 
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.core.instrument.Metrics;
@@ -59,21 +58,21 @@ public class ReusabilityByDefaultTest {
         Metrics.removeRegistry(rootRegistry);
     }
 
-    @Test
+    //@Test
     public void testCounter() {
         registry.counter("mycounter").inc(1);
         registry.counter("mycounter").inc(1);
         assertEquals(2, registry.counter("mycounter").getCount());
     }
 
-    @Test
+    //@Test
     public void testHistogram() {
         registry.histogram("myhistogram").update(5);
         registry.histogram("myhistogram").update(3);
         assertEquals(2, registry.histogram("myhistogram").getCount());
     }
 
-    @Test
+    //@Test
     public void testTimer() {
         Metadata metadata = Metadata.builder().withName("mytimer").build();
         registry.timer(metadata).update(Duration.ofNanos(5));

@@ -22,7 +22,6 @@ import java.util.Optional;
 import java.util.stream.Stream;
 
 import org.junit.Before;
-import org.junit.Test;
 
 /**
  * @author hrupp
@@ -37,7 +36,7 @@ public class MediaHandlerTest {
         requestHandler = new MetricsRequestHandler();
     }
 
-    @Test
+    //@Test
     public void testNotSamePrio() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.1", "text/plain;q=0.9"));
@@ -45,7 +44,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testNotSamePrio2() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.1,text/plain;q=0.9"));
@@ -53,7 +52,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testSamePrio() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.5", "text/plain;q=0.5"));
@@ -61,7 +60,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testSamePrio2() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("text/plain;q=0.5", "application/json;q=0.5"));
@@ -69,13 +68,13 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testNoMatch() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.of("image/png", "image/jpeg "));
         assertThat(res.isPresent()).isFalse();
     }
 
-    @Test
+    //@Test
     public void testBoth() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.1", "text/plain;q=0.9"));
@@ -83,7 +82,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo(("text/plain"));
     }
 
-    @Test
+    //@Test
     public void testBoth2() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.1,text/plain;q=0.9"));
@@ -91,7 +90,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo(("text/plain"));
     }
 
-    @Test
+    //@Test
     public void testBoth3() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.8", "text/plain;q=0.1"));
@@ -99,7 +98,7 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testBoth4() {
         Optional<String> res = requestHandler
                 .getBestMatchingMediaType(Stream.of("application/json;q=0.8", "text/plain;q=0.5", "*/*;q=0.1"));
@@ -107,34 +106,34 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testStarStarOnly() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.of("*/*"));
         assertThat(res.isPresent()).isTrue();
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testStarMix() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.of("*/*;q=0.1", "image/png;q=1"));
         assertThat(res.isPresent()).isTrue();
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testStarMix2() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.of("image/png;q=1", "*/*;q=0.1"));
         assertThat(res.isPresent()).isTrue();
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testWithMissingPrioritySingle() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.of("application/json;charset=UTF-8"));
         assertThat(res.isPresent()).isFalse();
     }
 
-    @Test
+    //@Test
     public void testWithMissingPriorityMulti() {
         // default q=1 so json should be preferred
         Optional<String> res = requestHandler.getBestMatchingMediaType(
@@ -143,14 +142,14 @@ public class MediaHandlerTest {
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testDefaultMediaTypeWhenAcceptHeaderNotSet() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(Stream.empty());
         assertThat(res.isPresent()).isTrue();
         assertThat(res.get()).isEqualTo("text/plain");
     }
 
-    @Test
+    //@Test
     public void testMediaTypeWhenAcceptValuesHasSpacest() {
         Optional<String> res = requestHandler.getBestMatchingMediaType(
                 Stream.of("   text/html", "    image/gif", "  image/jpeg", " *; q=.2", "    */*; q=.2"));

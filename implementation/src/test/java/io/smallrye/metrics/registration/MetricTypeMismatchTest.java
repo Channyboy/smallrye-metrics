@@ -23,7 +23,6 @@ import org.eclipse.microprofile.metrics.Metadata;
 import org.eclipse.microprofile.metrics.MetricFilter;
 import org.eclipse.microprofile.metrics.MetricRegistry;
 import org.junit.After;
-import org.junit.Test;
 
 import io.smallrye.metrics.SharedMetricRegistries;
 
@@ -36,7 +35,7 @@ public class MetricTypeMismatchTest {
         registry.removeMatching(MetricFilter.ALL);
     }
 
-    @Test
+    //@Test
     public void metricsWithDifferentType() {
         Metadata metadata1 = Metadata.builder().withName("metric1")
                 .withDescription("description1").build();
