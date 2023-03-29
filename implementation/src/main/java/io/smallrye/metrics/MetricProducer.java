@@ -163,17 +163,49 @@ public class MetricProducer {
 
     private Metadata getMetadata(InjectionPoint ip) {
         Metric metric = ip.getAnnotated().getAnnotation(Metric.class);
-        Metadata metadata;
-        if (metric != null) {
-            Metadata actualMetadata = Metadata.builder().withName(metricName.of(ip)).withUnit(metric.unit())
-                    .withDescription(metric.description()).build();
-            metadata = new OriginAndMetadata(ip, actualMetadata);
-        } else {
-            Metadata actualMetadata = Metadata.builder().withName(metricName.of(ip)).withUnit(MetricUnits.NONE)
-                    .withDescription("").build();
-            metadata = new OriginAndMetadata(ip, actualMetadata);
-        }
 
+        /*
+         * If we're dealing with a timer and there is no unit provided.
+         * We'll default it to NANOSECONDS. Due to strict metadata checking,
+         * this is needed otherwise we'll encounter an IllegalArgumentExeptoin.
+         * 
+         */
+
+        Metadata metadata;
+        String unit = MetricUnits.NONE;
+        String description = "";
+
+        boolean isTimerInjection = (ip.getType().getClass().equals(Timer.class)) ? true : false;
+
+        /*
+         * If @Metric annotation is present (not null), set description and unit values from parameters.
+         * - If Timer injection and unit value was the default MetricUnits.NONE -> default to NANOSECONDS
+         * Otherwise, @Metric annotation NOT present -> check if Timer injection to assign NANOSECONDS
+         * Note that init values are MetricUnits.NONE and "" for units and description above.
+         */
+        if (metric != null) {
+            description = metric.description();
+            unit = metric.unit();
+            if (metric.unit().equalsIgnoreCase(MetricUnits.NONE) && isTimerInjection)
+                unit = MetricUnits.NANOSECONDS;
+        } else if (isTimerInjection) {
+            unit = MetricUnits.NANOSECONDS;
+        }
+        //        if (metric != null) {
+        //
+        //            Metadata actualMetadata = Metadata.builder().withName(metricName.of(ip)).withUnit(metric.unit())
+        //                    .withDescription(metric.description()).build();
+        //            metadata = new OriginAndMetadata(ip, actualMetadata);
+        //        } else {
+        //
+        //            Metadata actualMetadata = Metadata.builder().withName(metricName.of(ip)).withUnit(MetricUnits.NONE)
+        //                    .withDescription("").build();
+        //            metadata = new OriginAndMetadata(ip, actualMetadata);
+        //        }
+
+        Metadata actualMetadata = Metadata.builder().withName(metricName.of(ip)).withUnit(unit)
+                .withDescription(description).build();
+        metadata = new OriginAndMetadata(ip, actualMetadata);
         return metadata;
     }
 
